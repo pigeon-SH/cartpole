@@ -17,15 +17,15 @@ def score_to_action(score):
     return torch.argmax(score, dim=-1).item()
 
 env = gym.make("CartPole-v1")
-EPISODES = 900
+EPISODES = 3000
 epsilon = 1.0
 epsilon_decay = 0.999
 epsilon_min = 0.01
-
 demonstrations = deque(maxlen=2000)
+
 record = []
 score_avg = 0.0
-best_score = 0.
+best_score = 300
 loss = 0.
 total_steps = 0
 
@@ -36,7 +36,7 @@ target_model = copy.deepcopy(model)
 for iter in range(EPISODES):
     # init state
     state = env.reset()
-    total_score = 0.0
+    score = 0.0
     steps = 0
     while True:
         # get action
@@ -53,8 +53,10 @@ for iter in range(EPISODES):
 
         # action
         next_state, reward, done, info = env.step(action)
-        score = reward
-        if done:
+        score += reward
+        if done and score >= 500:
+            reward = 1
+        elif done:
             reward = -1
         else:
             reward = 0.1
@@ -62,7 +64,6 @@ for iter in range(EPISODES):
         # record
         experience = (state, action, reward, done, next_state)
         demonstrations.append(experience)
-        total_score += score
         steps += 1
 
         # next
@@ -76,19 +77,20 @@ for iter in range(EPISODES):
             break
     
     total_steps += steps
-    print("iter: {:4d} / {:4d}, loss: {:7.4f} score_avg: {:7.4f}".format(iter, EPISODES, loss, score_avg))
+    print("iter: {:4d} / {:4d}, score_avg: {:7.4f}".format(iter, EPISODES, score_avg))
 
-    if total_score >= best_score and total_score > 100:
-        best_score = total_score
+    if score >= best_score:
+        best_score = score
         torch.save(model, './best_model.pt')
     
     target_model = copy.deepcopy(model)
 
-    score_avg = (score_avg * len(record) + total_score) / (len(record) + 1)
+    score_avg = (score_avg * len(record) + score) / (len(record) + 1)
     record.append(score_avg)
 
 torch.save(model, './model.pt')
 env.close()
+
 plt.plot(record)
-plt.savefig('./cartpole/cartpole_graph.png')
+plt.savefig('./cartpole_graph.png')
 plt.show()
