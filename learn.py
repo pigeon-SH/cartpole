@@ -65,7 +65,7 @@ def learn(env_name, EPISODES, obs_select, frame_num, learning_rate, load_best):
 
     record = []
     score_avg = 0.0
-    best_score = 100
+    best_score = 10
     total_steps = 0
 
     obs_index = [domain == 'T' for domain in obs_select]
@@ -140,26 +140,26 @@ def learn(env_name, EPISODES, obs_select, frame_num, learning_rate, load_best):
 
         if episode_score >= best_score:
             best_score = episode_score
-            torch.save(policy_net, 'learn/best_policy_net_' + obs_select + '.pt')
+            torch.save(policy_net, 'learn/best_policy_net_' + obs_select + '_' + str(frame_num) + '.pt')
         
         update_target_net(policy_net, target_net)
 
         score_avg = (score_avg * len(record) + episode_score) / (len(record) + 1)
         record.append(score_avg)
 
-    torch.save(policy_net, 'learn/policy_net_' + obs_select + '.pt')
+    torch.save(policy_net, 'learn/policy_net_' + obs_select + '_' + str(frame_num) + '.pt')
     env.close()
 
     plt.plot(record)
-    plt.savefig(env_name + '_graph_' + obs_select + '.png')
-    plt.show()
+    plt.savefig('learn/' + env_name + '_graph_' + obs_select + '_' + str(frame_num) + '.png')
+    #plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--obs', type=str, default="TTTT", help="You can restrict observation by giving F for that domain. Cart pole obs domain is (position, position_velocity, angle, angular_velocity) TFTF means only observe position and angle")
     parser.add_argument('--frame_num', type=int, default=4, help="how many frames you want to use for input of network")
-    parser.add_argument('--learning_rate', type=float, default=0.0001)
+    parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--episode_num', type=int, default=3000)
     parser.add_argument('--load_best', type=bool, default=False)
 
@@ -169,4 +169,6 @@ if __name__ == "__main__":
     learning_rate = args.learning_rate
     episode_num = args.episode_num
     load_best = args.load_best
+    
     learn("CartPole-v1", episode_num, obs_select, frame_num, learning_rate, load_best)
+    
